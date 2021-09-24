@@ -21,7 +21,7 @@ from    torch import optim
 # step 1: init dataset
 print("init dataset")
 
-dataroot = 'D:/Gt/meta-zsl/data'
+dataroot = '/data'
 dataset = 'CUB1_data'
 image_embedding = 'res101'
 class_embedding = 'att_splits'
@@ -58,7 +58,7 @@ att_pro = attribute[test_id]
 
 import numpy as np
 path=dataroot
-file='D:/Gt/meta-zsl/meta-gzsl/cub_attributes_reed.npy'
+file='/cub_attributes_reed.npy'
 attribute=15*np.load(file) # it scale the attribute in the some higher range since such
 #that its attribute is in the AWA dataset attribute range since our model is optimized for the AWA and
 # we are using the same parameter for all dataset. it scale the attribute in range of 100
@@ -422,7 +422,6 @@ class Meta(nn.Module):
         g_loss = adversarial_loss(validity, valid)
         # print('g_loss: '+str(g_loss))
 
-        # 使得生成器具有判别真实图片，也能判别生成的虚假照片的能力
         validity_real = self.discriminator(real_imgs, gen_attri, fast_weight)
         d_real_loss = adversarial_loss(validity_real, valid)
         # print('d_real_loss: '+str(d_real_loss))
@@ -431,9 +430,8 @@ class Meta(nn.Module):
         validity_fake = self.discriminator(gen_imgs.detach(), gen_attri, fast_weight)
         d_fake_loss = adversarial_loss(validity_fake, fake)
         # print('d_fake_loss: '+str(d_fake_loss))
-        # 增加grad penalty
 
-        #增加损失，这个损失限制gen_imgs和real_imgs的距离。
+        
         reconstruction_criterion = nn.L1Loss(size_average=False)
         lossrecon = reconstruction_criterion(gen_imgs, real_imgs)
         # Total discriminator loss
@@ -501,8 +499,6 @@ class Meta(nn.Module):
 
 
     def one_hot(self,x):
-        # 第一构造一个[class_count, class_count]的对角线为1的向量
-        # 第二保留label对应的行并返回
         return torch.eye(200)[x, :]
 
     def forward(self, x_spt, y_spt, x_qry, y_qry):
@@ -632,15 +628,15 @@ def gradient_penalty(D, xr, xf):
     t = torch.rand(batchsz, 1).cuda()
     t = t.expand_as(xr)
 
-    # 在真实数据和生成的做插值
+
     mid = t * xr + ((1 - t) * xf)
-    # 做导数
+
     mid.requires_grad_()
     pred = D(mid)
     grads = autograd.grad(outputs=pred, inputs=mid,
                           grad_outputs=torch.ones_like(pred),
                           create_graph=True, retain_graph=True, only_inputs=True)[0]
-    # 2范数越接近于1越好
+
     gp = torch.pow((grads.norm(2, dim=1) - 1), 2).mean()
 
     return gp
@@ -684,7 +680,7 @@ maml = Meta(args).cuda()
 # optimizer
 # model_optim = torch.optim.Adam(maml.parameters(), lr=0.001)
 # model_scheduler = StepLR(model_optim, step_size=10000, gamma=0.5)
-#定义两个优化器（判别器一个，G和关系网络R）
+
 
 gen_para=list(maml.generator.parameters())+ list(maml.relationnetwork.parameters())+ list(maml.mapping.parameters())
 maml.discriminator.parameters =maml.discriminator.parameters()
